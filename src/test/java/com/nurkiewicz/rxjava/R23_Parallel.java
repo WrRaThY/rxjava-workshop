@@ -1,7 +1,9 @@
 package com.nurkiewicz.rxjava;
 
+import com.nurkiewicz.rxjava.util.UrlDownloader;
 import com.nurkiewicz.rxjava.util.Urls;
 import io.reactivex.Flowable;
+import io.reactivex.schedulers.Schedulers;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -12,19 +14,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Ignore
 public class R23_Parallel {
-	
-	@Test
-	public void parallelOperator() throws Exception {
-		//given
-		Flowable<URL> urls = Urls.all();
 
-		//when
-		//Use UrlDownloader.downloadBlocking()
-		List<String> bodies = null; //...
+    @Test
+    public void parallelOperator() throws Exception {
+        //given
+        Flowable<URL> urls = Urls.all();
 
-		//then
-		assertThat(bodies).hasSize(996);
-		assertThat(bodies).contains("<html>www.twitter.com</html>", "<html>www.aol.com</html>", "<html>www.mozilla.org</html>");
-	}
+        //when
+        //Use UrlDownloader.downloadBlocking()
+        List<String> bodies = urls
+                .parallel(1000)
+                .runOn(Schedulers.io())
+                .map(url -> UrlDownloader.downloadBlocking(url))
+                .sequential()
+                .toList()
+                .blockingGet();
+
+        //then
+        assertThat(bodies).hasSize(996);
+        assertThat(bodies).contains("<html>www.twitter.com</html>", "<html>www.aol.com</html>", "<html>www.mozilla.org</html>");
+    }
 
 }
